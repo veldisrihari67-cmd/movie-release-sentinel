@@ -1,0 +1,30 @@
+name: Fetch Upcoming Movies
+on:
+  workflow_dispatch: 
+  schedule:
+    - cron: '0 8 * * *' # Runs every day at 8:00 AM UTC
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch TMDB Data
+        run: |
+          mkdir -p data
+          curl --request GET \
+            --url 'https://api.themoviedb.org/3/movie/upcoming?language=en-US&page=1' \
+            --header "Authorization: Bearer ${{ secrets.TMDB_API_KEY }}" \
+            --header 'accept: application/json' > data/upcoming.json
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/upcoming.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated update: Fetched upcoming movies"
+          git push
